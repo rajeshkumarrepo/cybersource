@@ -1,0 +1,68 @@
+<html lang="en">
+
+<head>
+    <title>Token</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+        integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+
+    <style>
+        .td-1 {
+            word-break: break-all;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <iframe name=”ddc-iframe” height="1" width="1" style="display: none;">
+    
+    </iframe>
+    
+    <form id="ddc-form" target=”ddc-iframe” method="POST"
+        action=<%-url%>>
+    
+        <input type="hidden" name="JWT"
+            value=<%-accesstoken%>/>
+    
+    </form>
+    <form action="/check-enrollment" id="check-enrollment-form" method="post">
+        <div class="check-enrollment-form-group">
+            <input type="hidden" id="token" name="token">
+            <input type="hidden" id="reference_id" name="reference_id">
+            <input type="hidden" id="return_url" name="return_url">
+        </div>
+    </form>
+    <script>
+        var form = document.querySelector('#check-enrollment-form');
+        var token_input = document.querySelector('#token');
+        var reference_id_input = document.querySelector('#reference_id');
+        var return_url_input = document.querySelector('#return_url');
+
+        var token = <%-token%>;
+        var reference_id = <%-reference_id%>;
+        var return_url = <%-return_url%>;
+
+        token_input.value = token;
+        reference_id_input.value = reference_id;
+        return_url_input.value = return_url;
+        window.onload = function () {
+            var ddcForm = document.querySelector('#ddc-form');
+            if (ddcForm) // ddc form exists
+                ddcForm.submit();
+        }
+        window.addEventListener("message", (event) => {
+                let data = JSON.parse(event.data);
+                console.log('Merchant received a message:', data);
+                if (event.origin === "https://centinelapistag.cardinalcommerce.com") {
+                }
+                if (data !== undefined && data.Status) {
+                    console.log('Songbird ran DF successfully');
+                }
+                form.submit();
+            }, false);
+    </script>
+</body>
+
+</html>

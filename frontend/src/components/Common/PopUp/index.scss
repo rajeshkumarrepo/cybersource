@@ -1,0 +1,92 @@
+.eargo-cybersource-layout-container {
+  * {
+    letter-spacing: normal;
+    line-height: normal;
+    -webkit-font-smoothing: subpixel-antialiased;
+    ::-webkit-scrollbar{
+      width: 0px
+      }
+  }
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  transition: opacity 500ms;
+  background-color: white;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  visibility: visible;
+  opacity: 1;
+  z-index: 99;
+  .eargo-cybersource-layout-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    overflow: scroll;
+    background-color: rgba(25, 24, 22, 0.5);
+    background-repeat: no-repeat;
+    background-size: inherit;
+    position: relative;
+    background-position: -270px 0px;
+    height: 100%;
+    max-height: 100vh;
+    @media only screen and (min-width: 1800px) and (max-width: 1940px) {
+      background-size: cover;
+      background-position: -470px 0px;
+    }
+    @media only screen and (min-width: 1941px) and (max-width: 3000px) {
+      background-size: cover;
+      background-position: -670px 0px;
+    }
+    @media only screen and (min-width: 3001px) and (max-width: 6144px) {
+      background-size: cover;
+      background-position: -1100px 0px;
+    }
+    @media (max-width: 600px) {
+      width: 100%;
+      background-image: none;
+    }
+    .eargo-cybersource-layout-form-container {
+      display: flex;
+      justify-content: center;
+      min-height: 100%;
+      width: 75%;
+      background-color: white;
+      overflow: scroll;
+      @media (max-width: 1024px) {
+        width: 100%;
+      }
+      .eargo-cybersource-layout-close {
+        position: fixed;
+        width: 15px;
+        top: 20px;
+        right: 20px;
+        cursor: pointer;
+      }
+      .eargo-cybersource-layout-form-holder {
+          display: flex;
+          align-items: center;
+          width: 80%;
+          max-width: 400px;
+          padding: 10px 0;
+          margin: auto;
+          &.f-column {
+            flex-direction: column;
+          }
+      }
+    }
+  }
+}
+
+.eargo-cybersource-layout-container::-webkit-scrollbar,
+.eargo-cybersource-layout-wrapper::-webkit-scrollbar {
+  width: 0px;
+  display: none;
+}
