@@ -6,6 +6,7 @@
     "start": "nodemon ./bin/www"
   },
   "dependencies": {
+    "@eargo/eargo-components": "*",
     "cookie-parser": "~1.4.3",
     "cors": "^2.8.5",
     "cybersource-rest-client": "0.0.21",
