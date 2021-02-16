@@ -268,14 +268,16 @@ app.post('/authentication_validation', async function (req, res) {
                 }
                 else if (data) {
                     console.log('\nData : ' + JSON.stringify(data));
-                    let handledResponse = authenticationValidationStatusHandler(data);
-                    return resolve(handledResponse)
+                    return resolve(data)
                     // return res.send(handledResponse);
                 }
             });
         })
+        console.log("resolve response ----------", resolveRes)
+        let handledResponse = authenticationValidationStatusHandler(resolveRes);
 
-        return res.send(resolveRes);
+        console.log("handled ----------", handledResponse)
+        return res.send(handledResponse);
     }
     catch (error) {
         console.log('\nException on calling the API : ' + error);
@@ -340,7 +342,6 @@ app.post('/create_tms_token', function (req, res) {
 
         var tokenInformation = new cybersourceRestApi.Ptsv2paymentsTokenInformation();
         tokenInformation.transientTokenJwt = token;
-        console.log("token ---------", token);
         requestObj.tokenInformation = tokenInformation;
 
         var instance = new cybersourceRestApi.PaymentsApi(configObj);
@@ -353,17 +354,23 @@ app.post('/create_tms_token', function (req, res) {
                 return res.status(400).send({ "success": false, "error": error });
             }
             else if (data) {
-                console.log('\nData : ' + JSON.stringify(data));
-                console.log("Last 4 digits of card ----", data.tokenInformation.instrumentIdentifier.id.slice(-4))
-                // res.render("token", {
-                //     token: JSON.stringify(data.tokenInformation.customer.id),
-                // })
-                return res.send({
-                    success: true, data: {
-                        token: data.tokenInformation.customer.id,
-                        last4: data.tokenInformation.instrumentIdentifier.id.slice(-4)
-                    }
-                })
+                if (data.errorInformation) {
+                    console.log('\nError : ' + JSON.stringify(data));
+                    return res.status(400).send({ "success": false, "error": data.errorInformation.message });
+                }
+                else {
+                    console.log('\nData : ' + JSON.stringify(data));
+                    console.log("Last 4 digits of card ----", data.tokenInformation.instrumentIdentifier.id.slice(-4))
+                    // res.render("token", {
+                    //     token: JSON.stringify(data.tokenInformation.customer.id),
+                    // })
+                    return res.send({
+                        success: true, data: {
+                            token: data.tokenInformation.customer.id,
+                            last4: data.tokenInformation.instrumentIdentifier.id.slice(-4)
+                        }
+                    })
+                }
             }
         });
     }
