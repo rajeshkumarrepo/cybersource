@@ -241,7 +241,7 @@ app.post('/check-enrollment', function (req, res) {
     }
 })
 
-app.post('/authentication_validation', function (req, res) {
+app.post('/authentication_validation', async function (req, res) {
     console.log("authentication_validation req body ----", req.body);
     try {
         var requestObj = new cybersourceRestApi.ValidateRequest();
@@ -257,19 +257,25 @@ app.post('/authentication_validation', function (req, res) {
 
         var instance = new cybersourceRestApi.PayerAuthenticationApi(configObj);
 
-        instance.validateAuthenticationResults(requestObj, function (error, data, response) {
-            console.log('\nResponse : ' + JSON.stringify(response));
-            console.log('\nResponse Code of Validate Authentication Results : ' + JSON.stringify(response['status']));
-            if (error) {
-                console.log('\nError : ' + JSON.stringify(error));
-                return res.status(400).send({ "success": false, "error": error });
-            }
-            else if (data) {
-                console.log('\nData : ' + JSON.stringify(data));
-                let handledResponse = authenticationValidationStatusHandler(data);
-                return res.send(handledResponse);
-            }
-        });
+        const resolveRes = await new Promise((resolve, reject) => {
+            instance.validateAuthenticationResults(requestObj, function (error, data, response) {
+                console.log('\nResponse : ' + JSON.stringify(response));
+                console.log('\nResponse Code of Validate Authentication Results : ' + JSON.stringify(response['status']));
+                if (error) {
+                    console.log('\nError : ' + JSON.stringify(error));
+                    return reject({ "success": false, "error": error })
+                    // return res.status(400).send({ "success": false, "error": error });
+                }
+                else if (data) {
+                    console.log('\nData : ' + JSON.stringify(data));
+                    let handledResponse = authenticationValidationStatusHandler(data);
+                    return resolve(handledResponse)
+                    // return res.send(handledResponse);
+                }
+            });
+        })
+
+        return res.send(resolveRes);
     }
     catch (error) {
         console.log('\nException on calling the API : ' + error);
