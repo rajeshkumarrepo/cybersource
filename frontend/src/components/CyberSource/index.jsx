@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { DotSpinLoading } from '@eargo/eargo-components'
 import CyberSourceForm from './Form'
 import { prepareRequest } from '../../common/helpers'
 import WaitScreen from '../Common/WaitScreen'
@@ -22,10 +23,10 @@ const CyberSource = () => {
         !initialize && fetchKeyInfo()
     }, [])
 
-    if (!initialize || !keyInfo)
-        return <WaitScreen message={!initialize ?
-            'Initializing...' :
-            'Something went wrong, Please try after some time.'} />
+    if (!initialize) return <DotSpinLoading />
+
+    if (!keyInfo)
+        return <WaitScreen message={'Something went wrong, Please try after some time.'} />
 
     return <CyberSourceForm captureContext={keyInfo} />
 }

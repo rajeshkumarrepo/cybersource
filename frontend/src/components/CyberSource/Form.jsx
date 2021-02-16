@@ -169,10 +169,13 @@ padding-bottom: 12px;
 }
 `;
 
-const isValidMonthYear = (value, checkMonth = true) => {
+const isValidMonthYear = (value, checkMonth = true, checkWithYear = false) => {
     const dateInstance = new Date()
     if (!!checkMonth) {
-        return ((dateInstance.getMonth() + 1) <= value) && (value <= 12)
+        if (!!checkWithYear)
+            return (dateInstance.getFullYear() <= `20${value}`) && ((dateInstance.getMonth() + 1) <= value) && (value <= 12)
+        else
+            return value <= 12
     } else {
         return (dateInstance.getFullYear() <= `20${value}`)
     }
@@ -336,9 +339,9 @@ const CyberSourceForm = ({ captureContext }) => {
             case 'name':
                 return 'Name'
             case 'expMonth':
-                return 'Expiry Month'
+                return 'Expiration'
             case 'expYear':
-                return 'Expiry Year'
+                return 'Expiration'
             case 'expiration':
                 return 'Expiration'
             default:
@@ -364,7 +367,14 @@ const CyberSourceForm = ({ captureContext }) => {
     const handleOnChange = async ({ target: { name, value } }) => {
         let fields = cardState.fields
         let errors = cardState.errors
-        fields[name] = value
+
+        if ((name === 'expMonth') || (name === 'expYear')) {
+            const replacedValue = !!value ? value.replace(/\D/g, '') : value
+            fields[name] = replacedValue
+        } else {
+            fields[name] = value
+        }
+
         !!errors['otherError'] && delete errors['otherError']
         handleCardState({ fields, errors })
     }
@@ -400,15 +410,39 @@ const CyberSourceForm = ({ captureContext }) => {
             if (!fields[name]) {
                 errors[name] = `Please enter ${getFieldName(name)}`;
             } else if (((name === 'expMonth') || (name === 'expYear')) && !!fields[name]) {
-                if ((name === 'expMonth') && !!value && !isValidMonthYear(value)) {
-                    errors[name] = `${getFieldName(name)} is not valid`;
-                }
-                if ((name === 'expYear') && !!value && !isValidMonthYear(value, false)) {
-                    errors[name] = `${getFieldName(name)} is not valid`;
-                }
+                // if ((name === 'expMonth') && !!value && !isValidMonthYear(value)) {
+                //     errors[name] = `${getFieldName(name)} is not valid`;
+                // }
+                // if ((name === 'expYear') && !!value && !isValidMonthYear(value, false)) {
+                //     errors[name] = `${getFieldName(name)} is not valid`;
+                // }
+
+                // if (!!fields['expYear']) {
+                //     if ((name === 'expMonth') && !isValidMonthYear(value, false)) {
+                //         errors['expYear'] = `${getFieldName(name)} is not valid`
+                //         delete errors['expMonth']
+                //     } else if (!isValidMonthYear(value, true, true)) {
+                //         errors['expMonth'] = `${getFieldName(name)} is not valid`
+                //     }
+                // }
+
+                // if (!!fields['expYear'] && (name === 'expMonth') && !isValidMonthYear(value, true, true)) {
+                //     errors['expMonth'] = `${getFieldName(name)} is not valid`
+                // }
+
+                // if (name === 'expMonth') {
+                //     if ((!!fields['expYear'] && !isValidMonthYear(value, true, true)) ||
+                //         (value < 12)) {
+                //         errors['expMonth'] = `${getFieldName(name)} is not valid`
+                //     }
+                // }
             }
 
-            fields[name] = value.trim();
+            if ((name === 'expMonth') && !!value && (value < 11) && value.length < 2) {
+                fields[name] = `0${value}`
+            } else {
+                fields[name] = value.trim()
+            }
         }
         handleCardState({ errors, fields })
     }
@@ -484,11 +518,12 @@ const CyberSourceForm = ({ captureContext }) => {
                             </ElementWrapper>
                         </InputHolder>
                         <InputHolder className="flex-container">
-                            <ElementWrapper label={(!expFocus && expFieldError) ? expFieldError : 'MM/YY'}
+                            <ElementWrapper label={(!expFocus && expFieldError) ? expFieldError : 'Expiration'}
                                 isValue={expFocus || (!!expMonth || !!expYear)}
                                 labelClass={`card-number-container ${(!expFocus && expFieldError) ? 'error_border' : ''}`}>
                                 <span className="expiration-dual-input">
-                                    <input type="text" className="expMonth" name="expMonth" maxLength="2" size="2"
+                                    <input type="text" value={expMonth || ''}
+                                        className="expMonth" name="expMonth" maxLength="2" size="2"
                                         onChange={handleOnChange}
                                         onFocus={(e) => {
                                             handleCSFocus('exp')
@@ -500,7 +535,8 @@ const CyberSourceForm = ({ captureContext }) => {
                                         }}
                                     />
                                     {(!!expMonth || !!expYear) && <SepratorSlash>/</SepratorSlash>}
-                                    <input type="text" name="expYear" maxLength="2" size="2"
+                                    <input type="text" value={expYear || ''}
+                                        name="expYear" maxLength="2" size="2"
                                         onChange={handleOnChange}
                                         onFocus={(e) => {
                                             handleCSFocus('exp')
