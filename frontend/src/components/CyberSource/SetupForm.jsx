@@ -13,12 +13,12 @@ const SetupForm = ({ info: { jwt, stepup_url, data, error } }) => {
     return (
         <Container>
             {!!stepup_url ? <Fragment>
-                <iframe name="step-up-iframe" height="400" width="400" />
+                <iframe name="step-up-iframe" width="400" />
                 <form id="step-up-form" target="step-up-iframe" method="post" action={stepup_url}>
                     <input type="hidden" name="JWT" value={jwt} />
                 </form>
             </Fragment> : <div class="card-body">
-                    <h1>Reult</h1>
+                    <h1>Result</h1>
                     <p className="green">{!!data ? data : 'N/A'}</p>
                     <h1>Error</h1>
                     <p className="red">{!!error ? error : 'N/A'}</p>

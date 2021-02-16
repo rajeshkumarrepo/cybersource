@@ -12,10 +12,6 @@ code {
     monospace;
 }
 
-#number-container, #securityCode-container {
-  height: 38px;
-}
-
 .flex-microform-focused {
   background-color: #fff;
   border-color: #80bdff;
