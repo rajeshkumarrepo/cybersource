@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import NumberFormat from 'react-number-format'
 import { PrimaryInput, helpersFn, EargoButton } from '@eargo/eargo-components'
 import { addScript, prepareRequest, removeElement, waitForScript } from '../../common/helpers'
 import PaymentToken from './PaymentToken'
@@ -10,7 +11,7 @@ const { handleErrOtherKey } = helpersFn
 const { WHITE, ERROR_RED, GREY_1, GREY_2 } = colorCodes
 const { mobile } = devices
 var microform = {};
-const fielsArray = ['name', 'expMonth', 'expYear']
+const fielsArray = ['name', 'expiration']
 
 // Custom styles that will be applied to each field we create using Microform
 const myStyles = {
@@ -31,19 +32,6 @@ font-weight: 800;
 `;
 
 const Container = styled.div`
-    card-name-container {
-      margin-bottom: 20px;
-      ::placeholder {
-            color: ${GREY_2};
-            opacity: 1;
-        }
-    }
-    .padding-left-0 {
-        padding-left: 0px;
-    }
-    .padding-left-24 {
-        padding-left: 24px;
-    }
     .card-containers {
         height: 75px;
         border: #d9d9d9 1px solid;
@@ -114,40 +102,18 @@ const Container = styled.div`
         padding-left: 24px;
     }
     .cardholder-name {
-        .expiration-dual-input {
-            input.expMonth {
-                height: 100%;
-                padding: 25px 0 0 24px;
-            }
-            input {
-                border: none;
-                outline: none;
-                color: ${GREY_1};
-            }
+        input.expiration {
+            height: 100%;
+            padding: 25px 0 0 24px;
+            border: none;
+            outline: none;
+            color: ${GREY_1};
         }
         span.label, span.floating_label {
             padding-left: 24px;
             @media ${mobile} {
                 padding-left: 16px;
             }
-        }
-    }
-    .card-exp-container, .card-cvc-container {
-        margin-bottom: 0px;
-        border-radius: 0px;
-    }
-    .card-exp-container {
-        border-top-left-radius: 3px;
-        border-bottom-left-radius: 3px;
-        @media ${mobile} {
-            border-radius: 3px;
-        }
-    }
-    .card-cvc-container {
-        border-top-right-radius: 3px;
-        border-bottom-right-radius: 3px;
-        @media ${mobile} {
-            border-radius: 3px;
         }
     }
     .flex-microform-focused {
@@ -157,9 +123,11 @@ const Container = styled.div`
     }
 `;
 
-const SepratorSlash = styled.span`
-margin-left: 5px;
-margin-right: 5px;
+
+const Form = styled.form`
+max-width: 500px;
+width: 100%;
+margin: 0 auto;
 `;
 
 const InputHolder = styled.div`
@@ -169,21 +137,25 @@ padding-bottom: 12px;
 }
 `;
 
-const isValidMonthYear = (value, checkMonth = true, checkWithYear = false) => {
-    const dateInstance = new Date()
-    if (!!checkMonth) {
-        if (!!checkWithYear)
-            return (dateInstance.getFullYear() <= `20${value}`) && ((dateInstance.getMonth() + 1) <= value) && (value <= 12)
-        else
-            return value <= 12
-    } else {
-        return (dateInstance.getFullYear() <= `20${value}`)
+const isExpirationValid = value => {
+    if (!value) return false
+
+    const newDate = value.split('/')
+    if (!!newDate && newDate.length === 2) {
+        const dateInstance = new Date()
+        const currentMonth = dateInstance.getMonth().toString()
+        const currentYear = dateInstance.getFullYear().toString()
+
+        const monthVal = (Number(newDate[0]) - 1).toString()
+        const yearVal = `20${newDate[1]}`
+        return new Date(yearVal, monthVal) >= new Date(currentYear, currentMonth)
     }
+    return false
 }
 
 const ElementWrapper = ({ label, children, labelClass, isValue }) => (
-    <label className={`card-containers inputContainer cardholder-name padding-left-0 ${labelClass}`}>
-        <span className={`body1_light ${isValue ? 'floating_label padding-left-24' : 'label'}`}>
+    <label className={`card-containers inputContainer cardholder-name ${labelClass}`}>
+        <span className={`body1_light ${isValue ? 'floating_label' : 'label'}`}>
             {label}
         </span>
         {children}
@@ -195,8 +167,8 @@ const CyberSourceForm = ({ captureContext }) => {
 
     const [cardState, setCardState] = useState({
         fields: {
-            expMonth: '',
-            expYear: ''
+            name: '',
+            expiration: ''
         },
         errors: {},
         customerId: false,
@@ -237,13 +209,7 @@ const CyberSourceForm = ({ captureContext }) => {
         setCardState((prevState) => {
             return ({
                 ...prevState,
-                [type + 'Focus']: false,
-                // [type + 'Error']: true,
-                // [type + 'Empty']: true,
-                // [type + 'Message']: typeMessage
-                // [type + 'Error']: !typeVal ? true : _invalid,
-                // [type + 'Empty']: !typeVal,
-                // [type + 'Message']: !typeVal ? 'is required' : 'is not valid'
+                [type + 'Focus']: false
             })
         })
     }
@@ -263,17 +229,17 @@ const CyberSourceForm = ({ captureContext }) => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         let errors = {};
-        const { fields: { expMonth, expYear } } = cardState
+        const { fields: { expiration } } = cardState
 
         if (validateForm()) {
             handleCardState({ isProcessing: true })
             var errorsOutput = document.querySelector('#errors-output')
             const { fields: { number, securityCode } } = microform
-
+            const expirationVal = expiration.split('/')
             if (!!number && !!securityCode) {
                 microform.createToken({
-                    expirationMonth: expMonth,
-                    expirationYear: `20${expYear}`
+                    expirationMonth: expirationVal[0],
+                    expirationYear: `20${expirationVal[1]}`
                 }, async function (err, token) {
                     if (err) {
                         if (!!err && !!err.details && !!err.details.length) {
@@ -290,6 +256,7 @@ const CyberSourceForm = ({ captureContext }) => {
 
                                 if (!!location && ((location === 'expirationMonth') ||
                                     (location === 'expirationYear'))) {
+                                    errors['expiration'] = message
                                     setCardState((prevState) => {
                                         return ({
                                             ...prevState,
@@ -338,10 +305,6 @@ const CyberSourceForm = ({ captureContext }) => {
         switch (name) {
             case 'name':
                 return 'Name'
-            case 'expMonth':
-                return 'Expiration'
-            case 'expYear':
-                return 'Expiration'
             case 'expiration':
                 return 'Expiration'
             default:
@@ -367,13 +330,7 @@ const CyberSourceForm = ({ captureContext }) => {
     const handleOnChange = async ({ target: { name, value } }) => {
         let fields = cardState.fields
         let errors = cardState.errors
-
-        if ((name === 'expMonth') || (name === 'expYear')) {
-            const replacedValue = !!value ? value.replace(/\D/g, '') : value
-            fields[name] = replacedValue
-        } else {
-            fields[name] = value
-        }
+        fields[name] = value
 
         !!errors['otherError'] && delete errors['otherError']
         handleCardState({ fields, errors })
@@ -396,53 +353,28 @@ const CyberSourceForm = ({ captureContext }) => {
             // Delete focused input errors and other error also
             if (!!errors) {
                 !!errors[name] && delete errors[name]
-
-                if ((name === 'expMonth') || (name === 'expYear')) {
-                    handleCardState({
-                        expError: false,
-                        expMessage: false
-                    })
+                if (name === 'expiration') {
+                    handleCardState({ expFocus: true })
                 }
+
                 !!errors['otherError'] && delete errors['otherError']
             }
         } else {
             delete errors[name] // Delete previous error and assign new one
             if (!fields[name]) {
                 errors[name] = `Please enter ${getFieldName(name)}`;
-            } else if (((name === 'expMonth') || (name === 'expYear')) && !!fields[name]) {
-                // if ((name === 'expMonth') && !!value && !isValidMonthYear(value)) {
-                //     errors[name] = `${getFieldName(name)} is not valid`;
-                // }
-                // if ((name === 'expYear') && !!value && !isValidMonthYear(value, false)) {
-                //     errors[name] = `${getFieldName(name)} is not valid`;
-                // }
-
-                // if (!!fields['expYear']) {
-                //     if ((name === 'expMonth') && !isValidMonthYear(value, false)) {
-                //         errors['expYear'] = `${getFieldName(name)} is not valid`
-                //         delete errors['expMonth']
-                //     } else if (!isValidMonthYear(value, true, true)) {
-                //         errors['expMonth'] = `${getFieldName(name)} is not valid`
-                //     }
-                // }
-
-                // if (!!fields['expYear'] && (name === 'expMonth') && !isValidMonthYear(value, true, true)) {
-                //     errors['expMonth'] = `${getFieldName(name)} is not valid`
-                // }
-
-                // if (name === 'expMonth') {
-                //     if ((!!fields['expYear'] && !isValidMonthYear(value, true, true)) ||
-                //         (value < 12)) {
-                //         errors['expMonth'] = `${getFieldName(name)} is not valid`
-                //     }
-                // }
             }
 
-            if ((name === 'expMonth') && !!value && (value < 11) && value.length < 2) {
-                fields[name] = `0${value}`
-            } else {
-                fields[name] = value.trim()
+            if (name === 'expiration') {
+                handleCardState({ expFocus: false })
+
+                if (!!value && !isExpirationValid(value)) {
+                    errors[name] = `Please enter valid ${getFieldName(name)}`;
+
+                }
+
             }
+            fields[name] = value.trim()
         }
         handleCardState({ errors, fields })
     }
@@ -461,7 +393,6 @@ const CyberSourceForm = ({ captureContext }) => {
                 numberField.on('blur', (data) => handleCSBlur('number', data))
                 numberField.on('change', (data) => handleStripeChange('number', data))
 
-                console.log("numberField ", numberField)
                 numberField.load('#number-container')
                 const securityCode = microform.createField('securityCode', { placeholder: '' })
                 securityCode.load('#securityCode-container')
@@ -479,24 +410,47 @@ const CyberSourceForm = ({ captureContext }) => {
         }
     }, [])
 
-    const { fields: { name, expMonth, expYear }, errors, isProcessing, customerId, scriptLoaded,
+    const { fields: { name, expiration }, errors, isProcessing, customerId, scriptLoaded,
         numberEmpty, numberError, numberFocus, numberMessage,
         expFocus, cvcEmpty, cvcError, cvcFocus, cvcMessage
     } = cardState
 
-    const expFieldError = !!errors && (!!errors.expMonth || !!errors.expYear) ?
-        (!!errors.expMonth ? errors.expMonth : errors.expYear) : false
+    let expirationValue;
+    if (expiration.length > 5) {
+        expirationValue = `${expiration.slice(0, 2)}/${expiration.slice(5, 7)}`;
+    } else {
+        expirationValue = expiration;
+    }
+
+    const cardExpiry = (val) => {
+        let newval = val.substring(0, 2)
+        const max = '12'
+        if (newval.length === 1 && newval[0] > max[0]) {
+            newval = `0${newval}`;
+        }
+        if (newval.length === 2) {
+            if (Number(newval) === 0) {
+                newval = '01';
+            } else if (newval > max) {
+                newval = max;
+            }
+        }
+        const month = `${newval}/`;
+        const year = val.substring(2, 4);
+        return month + (year.length ? year : '');
+    }
+
+    const expFieldError = (!!errors && !!errors.expiration) ? errors.expiration : false
     if (!scriptLoaded)
         return null
     else if (!!customerId)
         return <PaymentToken token={customerId} />
     else
         return (
-            <Container className="container card">
+            <Container>
                 <div className="card-body">
-                    <h1>Checkout</h1>
                     <div id="errors-output" role="alert"></div>
-                    <form onSubmit={handleSubmit}>
+                    <Form onSubmit={handleSubmit}>
                         <InputHolder>
                             <PrimaryInput
                                 id="name"
@@ -513,51 +467,32 @@ const CyberSourceForm = ({ captureContext }) => {
                         <InputHolder>
                             <ElementWrapper label={(!numberFocus && numberError) ? `Card Number ${numberMessage}` : 'Card Number'}
                                 isValue={numberFocus || !numberEmpty}
-                                labelClass={`card-number-container ${(!numberFocus && numberError) ? 'error_border' : ''}`}>
+                                labelClass={(!numberFocus && numberError) ? 'error_border' : ''}>
                                 <div className='card-inputs' id="number-container" />
                             </ElementWrapper>
                         </InputHolder>
                         <InputHolder className="flex-container">
                             <ElementWrapper label={(!expFocus && expFieldError) ? expFieldError : 'Expiration'}
-                                isValue={expFocus || (!!expMonth || !!expYear)}
-                                labelClass={`card-number-container ${(!expFocus && expFieldError) ? 'error_border' : ''}`}>
-                                <span className="expiration-dual-input">
-                                    <input type="text" value={expMonth || ''}
-                                        className="expMonth" name="expMonth" maxLength="2" size="2"
-                                        onChange={handleOnChange}
-                                        onFocus={(e) => {
-                                            handleCSFocus('exp')
-                                            handleFocusAndBlur(e)
-                                        }}
-                                        onBlur={(e) => {
-                                            handleCSBlur('exp')
-                                            handleFocusAndBlur(e, false)
-                                        }}
-                                    />
-                                    {(!!expMonth || !!expYear) && <SepratorSlash>/</SepratorSlash>}
-                                    <input type="text" value={expYear || ''}
-                                        name="expYear" maxLength="2" size="2"
-                                        onChange={handleOnChange}
-                                        onFocus={(e) => {
-                                            handleCSFocus('exp')
-                                            handleFocusAndBlur(e)
-                                        }}
-                                        onBlur={(e) => {
-                                            handleCSBlur('exp')
-                                            handleFocusAndBlur(e, false)
-                                        }}
-                                    />
-                                </span>
-
+                                isValue={expFocus || (!!expiration)}
+                                labelClass={` ${(!expFocus && expFieldError) ? 'error_border' : ''}`}>
+                                <NumberFormat
+                                    name="expiration"
+                                    className='expiration'
+                                    onChange={handleOnChange}
+                                    format={cardExpiry}
+                                    value={expirationValue}
+                                    onFocus={handleFocusAndBlur}
+                                    onBlur={e => handleFocusAndBlur(e, false)}
+                                />
                             </ElementWrapper>
                             <ElementWrapper label={(!cvcFocus && cvcError) ? `CVC ${cvcMessage}` : 'CVC'}
                                 isValue={cvcFocus || !cvcEmpty}
-                                labelClass={`card-number-container ${(!cvcFocus && cvcError) ? 'error_border' : ''}`}>
+                                labelClass={(!cvcFocus && cvcError) ? 'error_border' : ''}>
                                 <div className='card-inputs' id="securityCode-container" />
                             </ElementWrapper>
                         </InputHolder>
                         <Button type="submit" label={!!isProcessing ? 'Processing...' : 'Pay'} />
-                    </form>
+                    </Form>
                 </div>
             </Container>
         )
