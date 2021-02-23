@@ -16,9 +16,13 @@ const authenticationValidationStatusHandler = require('./helpers');
 const AuthenticationType = 'http_signature';
 const RunEnvironment = 'cybersource.environment.SANDBOX';
 
-const MerchantId = 'testrest';
-const MerchantKeyId = '08c94330-f618-42a3-b09d-e1e43be5efda';
-const MerchantSecretKey = 'yBJxy6LjM2TmcPGu+GaJrHtkke25fPpUX+UY6/L/1tE=';
+// const MerchantId = 'testrest';
+// const MerchantKeyId = '08c94330-f618-42a3-b09d-e1e43be5efda';
+// const MerchantSecretKey = 'yBJxy6LjM2TmcPGu+GaJrHtkke25fPpUX+UY6/L/1tE=';
+
+const MerchantId = 'eargo_hearing';
+const MerchantKeyId = "c501f18a-1330-4196-87e8-e2ecfff14a25";
+const MerchantSecretKey = "CFvJYXacGKY8oEP1YtXuAzttgVuEhsztQF55CkV+zkI="
 
 // jwt parameters
 const KeysDirectory = 'Resource';
@@ -30,8 +34,9 @@ const KeyPass = 'testrest';
 const EnableLog = true;
 const LogFileName = 'cybs';
 const LogDirectory = '../log';
-const LogfileMaxSize = '5242880'; //10 MB In Bytes
+const LogfileMaxSize = '10485760'; //10 MB In Bytes
 
+let customerId = null;
 
 var configObj = {
     'authenticationType': AuthenticationType,
@@ -78,7 +83,7 @@ app.get('/checkout', function (req, res) {
         var requestObj = new cybersourceRestApi.GeneratePublicKeyRequest();
 
         requestObj.encryptionType = 'RsaOaep256';
-        // requestObj.targetOrigin = 'http://localhost:3000';
+        // requestObj.targetOrigin = 'http://localhost';
         requestObj.targetOrigin = (req.headers.referer).replace(/\/$/, "")
         var format = "JWT";
 
@@ -87,18 +92,19 @@ app.get('/checkout', function (req, res) {
         console.log('\n*************** Generate Key ********************* ');
 
         instance.generatePublicKey(format, requestObj, function (error, data, response) {
+            // console.log('Response : ', response);
+            // console.log('Response : ' + JSON.stringify(response));
+            // console.log('Response Code Of GenerateKey : ' + response['status']);
             if (error) {
-                console.log('Error : ' + error);
-                console.log('Error status code : ' + error.statusCode);
+                console.log('Error in generate API key : ' + error);
+                // console.log('Error status code : ' + error.statusCode);
                 return res.status(400).send({ "success": false, "error": error });
             }
             else if (data) {
-                console.log('Data : ' + JSON.stringify(data));
-                console.log('CaptureContext: ' + data.keyId);
+                console.log('Data in generate API key : ', data);
+                // console.log('CaptureContext: ' + data.keyId);
                 return res.send({ success: true, data: { keyInfo: data.keyId } });
             }
-            console.log('Response : ' + JSON.stringify(response));
-            console.log('Response Code Of GenerateKey : ' + response['status']);
         });
 
     } catch (error) {
@@ -124,6 +130,7 @@ app.post('/token', function (req, res) {
 
 });
 
+let reference_id = null;
 
 app.post('/payer-auth-setup', function (req, res) {
     console.log("payer-auth-setup req body ------", req.body)
@@ -134,28 +141,30 @@ app.post('/payer-auth-setup', function (req, res) {
         var instance = new cybersourceRestApi.PayerAuthenticationApi(configObj);
         var requestObj = new cybersourceRestApi.PayerAuthSetupRequest();
 
-        var paymentInformation = new cybersourceRestApi.Riskv1authenticationsetupsPaymentInformation();
-        var paymentInformationCustomer = new cybersourceRestApi.Riskv1authenticationsetupsPaymentInformationCustomer();
+        var paymentInformation = new cybersourceRestApi.Ptsv2paymentsPaymentInformation();
+        var paymentInformationCustomer = new cybersourceRestApi.Ptsv2paymentsPaymentInformationCustomer();
         paymentInformationCustomer.customerId = token//"BB262E072B0A32F3E05341588E0AA885";
         paymentInformation.customer = paymentInformationCustomer;
 
         requestObj.paymentInformation = paymentInformation;
 
-        var clientReferenceInformation = new cybersourceRestApi.Riskv1authenticationsetupsClientReferenceInformation();
+        var clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
         clientReferenceInformation.code = 'UNKNOWN';
         requestObj.clientReferenceInformation = clientReferenceInformation;
 
         console.log('\n*************** payerAuthSetup ********************* ', requestObj);
 
         instance.payerAuthSetup(requestObj, function (error, data, response) {
-            console.log('\nResponse of payerAuthSetup : ' + JSON.stringify(response));
-            console.log('\nResponse Code of payerAuthSetup : ' + JSON.stringify(response['status']));
+            // console.log('\nResponse of payerAuthSetup : ' + JSON.stringify(response));
+            // console.log('\nResponse Code of payerAuthSetup ----------- : ' + JSON.stringify(response['status']));
             if (error) {
-                console.log('\nError in payerAuthSetup : ' + JSON.stringify(error));
+                console.log("error in payerAuthSetup -----", error)
+                // console.log('\nError in payerAuthSetup ----------- : ' + JSON.stringify(error));
                 return res.status(400).send({ "success": false, "error": error })
             }
             else if (data) {
-                console.log('\nData of payerAuthSetup : ' + JSON.stringify(data));
+                reference_id = data.consumerAuthenticationInformation.referenceId;
+                console.log('\nData of payerAuthSetup ----------- : ', data);
                 return res.send({
                     success: true, data: {
                         url: data.consumerAuthenticationInformation.deviceDataCollectionUrl,
@@ -187,8 +196,8 @@ app.post('/check-enrollment', function (req, res) {
         clientReferenceInformation.code = 'UNKNOWN';
         requestObj.clientReferenceInformation = clientReferenceInformation;
 
-        var orderInformation = new cybersourceRestApi.Riskv1authenticationsOrderInformation();
-        var orderInformationAmountDetails = new cybersourceRestApi.Riskv1authenticationsOrderInformationAmountDetails();
+        var orderInformation = new cybersourceRestApi.Ptsv2payoutsOrderInformation();
+        var orderInformationAmountDetails = new cybersourceRestApi.Ptsv2payoutsOrderInformationAmountDetails;
         orderInformationAmountDetails.currency = 'USD';
         orderInformationAmountDetails.totalAmount = '10.99';
         orderInformation.amountDetails = orderInformationAmountDetails;
@@ -219,17 +228,22 @@ app.post('/check-enrollment', function (req, res) {
 
         instance.checkPayerAuthEnrollment(requestObj, function (error, data, response) {
             if (error) {
-                console.log('\nError : ' + JSON.stringify(error));
+                console.log('\nError in check payer enrollment ----------- : ', error);
                 return res.status(400).send({ "success": false, "error": error });
             }
             else if (data) {
-                console.log('\n --------- Data : ' + JSON.stringify(data));
-                console.log("Authentication Status", data.status)
+                console.log('\nData check payer auth enrollment : ', data);
+                // console.log("Authentication Status", data.status)
 
-                console.log('\nResponse : ' + JSON.stringify(response));
-                console.log('\nResponse Code of Check Payer Auth Enrollment : ' + JSON.stringify(response['status']));
+                // console.log('\nResponse ----------- : ' + JSON.stringify(response));
+                // console.log('\nResponse Code of Check Payer Auth Enrollment ----------- : ' + JSON.stringify(response['status']));
                 if (data.status === "PENDING_AUTHENTICATION") {
-                    return res.send({ success: true, data: { "jwt": data.consumerAuthenticationInformation.accessToken, "stepup_url": data.consumerAuthenticationInformation.stepUpUrl } });
+                    return res.send({
+                        success: true, data: {
+                            "jwt": data.consumerAuthenticationInformation.accessToken,
+                            "stepup_url": data.consumerAuthenticationInformation.stepUpUrl
+                        }
+                    });
                 } else {
                     return res.send({ success: true, data: { "error": JSON.stringify(error), "data": JSON.stringify(data) } });
                 }
@@ -241,7 +255,7 @@ app.post('/check-enrollment', function (req, res) {
     }
 })
 
-app.post('/authentication_validation', async function (req, res) {
+app.post('/authentication_validation2', async function (req, res) {
     console.log("authentication_validation req body ----", req.body);
     try {
         var requestObj = new cybersourceRestApi.ValidateRequest();
@@ -257,10 +271,86 @@ app.post('/authentication_validation', async function (req, res) {
 
         var instance = new cybersourceRestApi.PayerAuthenticationApi(configObj);
 
+        // const resolveRes = await new Promise((resolve, reject) => {
+        //     instance.validateAuthenticationResults(requestObj, function (error, data, response) {
+        //         console.log('\nResponse : ' + JSON.stringify(response));
+        //         console.log('\nResponse Code of Validate Authentication Results : ' + JSON.stringify(response['status']));
+        //         if (error) {
+        //             console.log('\nError : ' + JSON.stringify(error));
+        //             return reject({ "success": false, "error": error })
+        //             // return res.status(400).send({ "success": false, "error": error });
+        //         }
+        //         else if (data) {
+        //             console.log('\nData : ' + JSON.stringify(data));
+        //             return resolve(data)
+        //             // return res.send(handledResponse);
+        //         }
+        //     });
+        // })
+
+        // 
+
+        // console.log("resolve response ----------", resolveRes)
+        // if (!resolveRes.success) return res.status(400).send(resolveRes);
+
+        // let handledResponse = authenticationValidationStatusHandler(resolveRes);
+        // console.log("handled ----------", handledResponse)
+        // window.top.window.postMessage('new-page-message-for-parent=haha', '*')
+        // return res.redirect(`http://localhost:3001/order_complete/${handledResponse.data.clientReferenceInformation.code}`) //.send(handledResponse);
+        // return res.send(handledResponse)
+        return res.send("Hello")
+    }
+    catch (error) {
+        console.log('\nException on calling the API : ' + error);
+    }
+})
+
+app.post('/check-enrollment2', async function (req, res) {
+    try {
+        var requestObj = new cybersourceRestApi.CheckPayerAuthEnrollmentRequest();
+
+        var consumerAuthenticationInformation = new cybersourceRestApi.Ptsv2paymentsConsumerAuthenticationInformation();
+        consumerAuthenticationInformation.returnUrl = req.body.return_url;
+        consumerAuthenticationInformation.referenceId = req.body.reference_id;
+        requestObj.consumerAuthenticationInformation = consumerAuthenticationInformation;
+
+        var clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
+        clientReferenceInformation.code = 'UNKNOWN';
+        requestObj.clientReferenceInformation = clientReferenceInformation;
+
+        var orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
+        var orderInformationAmountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
+        orderInformationAmountDetails.currency = 'USD';
+        orderInformationAmountDetails.totalAmount = '10.99';
+        orderInformation.amountDetails = orderInformationAmountDetails;
+
+        var processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
+
+        var actionList = new Array();
+        actionList.push("CONSUMER_AUTHENTICATION");
+        processingInformation.actionList = actionList;
+
+        processingInformation.capture = false;
+        requestObj.processingInformation = processingInformation;
+
+        var paymentInformation = new cybersourceRestApi.Ptsv2paymentsPaymentInformation();
+        var paymentInformationCustomer = new cybersourceRestApi.Ptsv2paymentsPaymentInformationCustomer();
+        paymentInformationCustomer.customerId = customerId//"BB262E072B0A32F3E05341588E0AA885";
+        paymentInformation.customer = paymentInformationCustomer;
+
+        requestObj.paymentInformation = paymentInformation;
+
+        var consumerAuthenticationInformation = new cybersourceRestApi.Ptsv2paymentsConsumerAuthenticationInformation();
+        // consumerAuthenticationInformation.authenticationTransactionId = req.body.TransactionId;
+        console.log("reference id -----", reference_id);
+        consumerAuthenticationInformation.referenceId = reference_id;
+        requestObj.consumerAuthenticationInformation = consumerAuthenticationInformation;
+
+        var instance = new cybersourceRestApi.PaymentsApi(configObj);
         const resolveRes = await new Promise((resolve, reject) => {
-            instance.validateAuthenticationResults(requestObj, function (error, data, response) {
+            instance.createPayment(requestObj, function (error, data, response) {
                 console.log('\nResponse : ' + JSON.stringify(response));
-                console.log('\nResponse Code of Validate Authentication Results : ' + JSON.stringify(response['status']));
+                console.log('\nResponse Code of Validate Authentication Results ----------- : ' + JSON.stringify(response['status']));
                 if (error) {
                     console.log('\nError : ' + JSON.stringify(error));
                     return reject({ "success": false, "error": error })
@@ -268,16 +358,102 @@ app.post('/authentication_validation', async function (req, res) {
                 }
                 else if (data) {
                     console.log('\nData : ' + JSON.stringify(data));
+                    return resolve({
+                        success: true, data: {
+                            "jwt": data.consumerAuthenticationInformation.accessToken,
+                            "stepup_url": data.consumerAuthenticationInformation.stepUpUrl
+                        }
+                    })
+                    // return res.send(handledResponse);
+                }
+            });
+        })
+
+        console.log("resolve res -----", resolveRes);
+        return res.send(resolveRes);
+    }
+    catch (error) {
+        console.log('\nException on calling the API : ' + error);
+    }
+})
+app.post('/authentication_validation', async function (req, res) {
+    try {
+        var requestObj = new cybersourceRestApi.CreatePaymentRequest();
+
+        var clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
+        clientReferenceInformation.code = 'UNKNOWN';
+        requestObj.clientReferenceInformation = clientReferenceInformation;
+
+        var processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
+
+        var actionList = new Array();
+        actionList.push("VALIDATE_CONSUMER_AUTHENTICATION");
+        processingInformation.actionList = actionList;
+
+        processingInformation.capture = false;
+        requestObj.processingInformation = processingInformation;
+
+        var paymentInformation = new cybersourceRestApi.Riskv1authenticationsetupsPaymentInformation();
+        var paymentInformationCustomer = new cybersourceRestApi.Riskv1authenticationsetupsPaymentInformationCustomer();
+        paymentInformationCustomer.customerId = customerId//"BB262E072B0A32F3E05341588E0AA885";
+        paymentInformation.customer = paymentInformationCustomer;
+
+        requestObj.paymentInformation = paymentInformation;
+
+        var orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
+        var orderInformationAmountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
+        orderInformationAmountDetails.currency = 'USD';
+        orderInformationAmountDetails.totalAmount = '10.99';
+        orderInformation.amountDetails = orderInformationAmountDetails;
+
+        requestObj.orderInformation = orderInformation;
+
+        var consumerAuthenticationInformation = new cybersourceRestApi.Ptsv2paymentsConsumerAuthenticationInformation();
+        consumerAuthenticationInformation.authenticationTransactionId = req.body.TransactionId;
+        requestObj.consumerAuthenticationInformation = consumerAuthenticationInformation;
+
+
+        var instance = new cybersourceRestApi.PaymentsApi(configObj);
+        const resolveRes = await new Promise((resolve, reject) => {
+            instance.createPayment(requestObj, function (error, data, response) {
+                // console.log('\nResponse ----------- : ' + JSON.stringify(response));
+                // console.log('\nResponse Code of Validate Authentication Results ----------- : ' + JSON.stringify(response['status']));
+                if (error) {
+                    console.log('\nError in authentication validation: ', error);
+                    return reject({ "success": false, "error": error })
+                    // return res.status(400).send({ "success": false, "error": error });
+                }
+                else if (data) {
+                    console.log('\nData in authentication validation ----------- : ', data);
                     return resolve(data)
                     // return res.send(handledResponse);
                 }
             });
         })
-        console.log("resolve response ----------", resolveRes)
-        let handledResponse = authenticationValidationStatusHandler(resolveRes);
 
-        console.log("handled ----------", handledResponse)
-        return res.send(handledResponse);
+        // 
+
+        // console.log("resolve response ----------", resolveRes)
+        // if (!resolveRes.success) return res.status(400).send(resolveRes);
+
+        // let handledResponse = authenticationValidationStatusHandler(resolveRes);
+        // console.log("handled ----------", handledResponse)
+        // window.top.window.postMessage('new-page-message-for-parent=haha', '*')
+        // return res.redirect(`http://localhost:3001/order_complete/${handledResponse.data.clientReferenceInformation.code}`) //.send(handledResponse);
+        return res.send(resolveRes)
+
+        // instance.createPayment(requestObj, function (error, data, response) {
+        //     if (error) {
+        //         console.log('\nError : ' + JSON.stringify(error));
+        //     }
+        //     else if (data) {
+        //         console.log('\nData : ' + JSON.stringify(data));
+        //     }
+
+        //     console.log('\nResponse : ' + JSON.stringify(response));
+        //     console.log('\nResponse Code of Process a Payment : ' + JSON.stringify(response['status']));
+        //     callback(error, data, response);
+        // });
     }
     catch (error) {
         console.log('\nException on calling the API : ' + error);
@@ -347,30 +523,25 @@ app.post('/create_tms_token', function (req, res) {
         var instance = new cybersourceRestApi.PaymentsApi(configObj);
 
         const response = instance.createPayment(requestObj, function (error, data, response) {
-            console.log('\nResponse : ' + JSON.stringify(response));
-            console.log('\nResponse Code of Process a Payment : ' + JSON.stringify(response['status']));
+            // console.log('\nResponse : ' + JSON.stringify(response));
+            // console.log('\nResponse Code of Process a Payment : ' + JSON.stringify(response['status']));
             if (error) {
-                console.log('\nError : ' + JSON.stringify(error));
+                console.log('\nError in create TMS: ', error);
                 return res.status(400).send({ "success": false, "error": error });
             }
             else if (data) {
-                if (data.errorInformation) {
-                    console.log('\nError : ' + JSON.stringify(data));
-                    return res.status(400).send({ "success": false, "error": data.errorInformation.message });
-                }
-                else {
-                    console.log('\nData : ' + JSON.stringify(data));
-                    console.log("Last 4 digits of card ----", data.tokenInformation.instrumentIdentifier.id.slice(-4))
-                    // res.render("token", {
-                    //     token: JSON.stringify(data.tokenInformation.customer.id),
-                    // })
-                    return res.send({
-                        success: true, data: {
-                            token: data.tokenInformation.customer.id,
-                            last4: data.tokenInformation.instrumentIdentifier.id.slice(-4)
-                        }
-                    })
-                }
+                console.log('\nData  in create TMS : ', data);
+                // console.log("Last 4 digits of card ----", data.tokenInformation.instrumentIdentifier.id.slice(-4))
+                // res.render("token", {
+                //     token: JSON.stringify(data.tokenInformation.customer.id),
+                // })
+                customerId = data.tokenInformation.customer.id;
+                return res.send({
+                    success: true, data: {
+                        token: data.tokenInformation.customer.id,
+                        last4: data.tokenInformation.instrumentIdentifier.id.slice(-4)
+                    }
+                })
             }
         });
     }
