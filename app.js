@@ -82,9 +82,9 @@ app.use(
             guest_token = crypto.randomBytes(16).toString('hex');
             res.cookie("guest_token", guest_token, {
                 httpOnly: true,
-                sameSite: 'LAX',
+                sameSite: 'None',
                 domain: 'localhost',
-                // secure: true, // Uncomment this if server is using 'https'
+                secure: true,
                 maxAge: 60 * 60 * 1000
             });
         }
