@@ -70,7 +70,7 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-app.use(cors({ origin: "https://cybersource-test-fe.herokuapp.com", credentials: true }))
+app.use(cors({ origin: "https://shop-dev4.eargo.com", credentials: true }))
 app.use(cookieParser());
 app.use(
     (req, res, next) => {
@@ -83,7 +83,7 @@ app.use(
             res.cookie("guest_token", guest_token, {
                 httpOnly: true,
                 sameSite: 'None',
-                domain: '.herokuapp.com',
+                domain: '.eargo.com',
                 secure: true,
                 maxAge: 60 * 60 * 1000
             });
