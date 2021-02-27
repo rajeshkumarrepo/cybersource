@@ -1,9 +1,15 @@
+process.on('warning', () => console.warn("LOOK AT THIS ---------------------------"));
+process.on('warning', e => console.warn(e.stack));
+process.on('error', e => console.error(e.stack));
+
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
+var crypto = require('crypto');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -64,11 +70,30 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-app.use(cors())
+app.use(cors({ origin: "http://localhost:3001", credentials: true }))
+app.use(cookieParser());
+app.use(
+    (req, res, next) => {
+        let { guest_token } = req.cookies;
+        console.log("guest token ----", guest_token);
+
+        if (!guest_token) {
+            console.log("COOOKIE CHANGED ---------");
+            guest_token = crypto.randomBytes(16).toString('hex');
+            res.cookie("guest_token", guest_token, {
+                httpOnly: true,
+                sameSite: 'LAX',
+                domain: 'localhost',
+                // secure: true, // Uncomment this if server is using 'https'
+                maxAge: 60 * 60 * 1000
+            });
+        }
+        next();
+    });
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
@@ -211,7 +236,7 @@ app.post('/check-enrollment', function (req, res) {
         orderInformationBillTo.firstName = 'John';
         orderInformationBillTo.lastName = 'Doe';
         orderInformationBillTo.phoneNumber = '4158880000';
-        orderInformationBillTo.email = 'test@cybs.com';
+        orderInformationBillTo.email = 'test+1@cybs.com';
         orderInformationBillTo.postalCode = '94105';
         orderInformation.billTo = orderInformationBillTo;
 
@@ -376,7 +401,7 @@ app.post('/check-enrollment2', async function (req, res) {
         console.log('\nException on calling the API : ' + error);
     }
 })
-app.post('/authentication_validation', async function (req, res) {
+app.post('/authentication_validation3', async function (req, res) {
     try {
         var requestObj = new cybersourceRestApi.CreatePaymentRequest();
 
@@ -459,6 +484,72 @@ app.post('/authentication_validation', async function (req, res) {
         console.log('\nException on calling the API : ' + error);
     }
 })
+app.post('/authentication_validation', async function (req, res) {
+    try {
+        const requestObj = new cybersourceRestApi.CreatePaymentRequest();
+
+        const clientReferenceInformation = new cybersourceRestApi.Ptsv2paymentsClientReferenceInformation();
+        clientReferenceInformation.code = "data.order.number";
+        requestObj.clientReferenceInformation = clientReferenceInformation;
+
+        const processingInformation = new cybersourceRestApi.Ptsv2paymentsProcessingInformation();
+
+        const actionList = new Array();
+        actionList.push("VALIDATE_CONSUMER_AUTHENTICATION");
+        processingInformation.actionList = actionList;
+
+        processingInformation.capture = false;
+        requestObj.processingInformation = processingInformation;
+
+        const paymentInformation = new cybersourceRestApi.Ptsv2paymentsPaymentInformation();
+        const paymentInformationCustomer = new cybersourceRestApi.Ptsv2paymentsPaymentInformationCustomer();
+        paymentInformationCustomer.customerId = customerId
+        paymentInformation.customer = paymentInformationCustomer;
+
+        requestObj.paymentInformation = paymentInformation;
+
+        const orderInformation = new cybersourceRestApi.Ptsv2paymentsOrderInformation();
+        const orderInformationAmountDetails = new cybersourceRestApi.Ptsv2paymentsOrderInformationAmountDetails();
+        orderInformationAmountDetails.currency = 'USD';
+        orderInformationAmountDetails.totalAmount = "3500";
+        orderInformation.amountDetails = orderInformationAmountDetails;
+
+        requestObj.orderInformation = orderInformation;
+
+        const consumerAuthenticationInformation = new cybersourceRestApi.Ptsv2paymentsConsumerAuthenticationInformation();
+        consumerAuthenticationInformation.authenticationTransactionId = req.body.TransactionId;
+        requestObj.consumerAuthenticationInformation = consumerAuthenticationInformation;
+
+        var processingInformationAuthorizationOptions = new cybersourceRestApi.Ptsv2paymentsProcessingInformationAuthorizationOptions();
+        processingInformationAuthorizationOptions.partialAuthIndicator = true;
+        processingInformation.authorizationOptions = processingInformationAuthorizationOptions;
+
+        requestObj.processingInformation = processingInformation;
+
+        const instance = new cybersourceRestApi.PaymentsApi(configObj);
+        const result = await new Promise((resolve, reject) => {
+            instance.createPayment(requestObj, (error, data, response) => {
+                // console.log("Response code for cybersource authenticationValidation : " + response["status"]);
+                // console.log("Response from cybersource authenticationValidation : " + JSON.stringify(response));
+                if (error) {
+                    // console.log("Error status code from cybersource authenticationValidation : " + error.statusCode);
+                    console.log("Error from cybersource authenticationValidation : ", error);
+                    // TODO: generate error report
+                    return reject({ "success": false, "error": error })
+                }
+                else if (data) {
+                    console.log("Data from cybersource authenticationValidation : ", data);
+                    return resolve({ "success": true, data })
+                }
+            });
+        })
+
+        return res.send(result);
+    }
+    catch (error) {
+        console.log('\nException on calling the API : ' + error);
+    }
+})
 
 app.post('/create_tms_token', function (req, res) {
     console.log("in create tms token ------", req.body);
@@ -500,7 +591,7 @@ app.post('/create_tms_token', function (req, res) {
         orderInformationBillTo.administrativeArea = 'CA';
         orderInformationBillTo.postalCode = '94105';
         orderInformationBillTo.country = 'US';
-        orderInformationBillTo.email = 'test@cybs.com';
+        orderInformationBillTo.email = 'test+1@cybs.com';
         orderInformationBillTo.phoneNumber = '4158880000';
         orderInformation.billTo = orderInformationBillTo;
 

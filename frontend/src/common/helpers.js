@@ -83,6 +83,7 @@ export const prepareRequest = async (method, url, data, dataType, contentType) =
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
+      credentials: "include",
       ...(data && { 'body': data }),
       ...(dataType && { 'dataType': dataType }),
       ...(contentType && { 'contentType': contentType })
