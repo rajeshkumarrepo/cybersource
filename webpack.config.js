@@ -7,7 +7,7 @@ module.exports = function (env) {
         target: 'node',
         externals: [nodeExternals()],
         entry: {
-            'index': './app.js',
+            'index': './bin/www',
         },
         output: {
             path: path.join(__dirname, 'build'),
