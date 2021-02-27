@@ -83,7 +83,7 @@ app.use(
             res.cookie("guest_token", guest_token, {
                 httpOnly: true,
                 sameSite: 'None',
-                domain: 'cybersource-test-fe.herokuapp.com',
+                domain: '.herokuapp.com',
                 secure: true,
                 maxAge: 60 * 60 * 1000
             });
