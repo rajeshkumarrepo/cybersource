@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "build": "rm -rf dist && webpack --mode development",
     "start": "node ./bin/www",
     "start-nodemon": "nodemon ./bin/www"
   },
@@ -19,6 +20,9 @@
     "morgan": "~1.10.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.7"
+    "nodemon": "^2.0.7",
+    "webpack": "^5.24.2",
+    "webpack-cli": "^4.5.0",
+    "webpack-node-externals": "^2.5.2"
   }
 }
