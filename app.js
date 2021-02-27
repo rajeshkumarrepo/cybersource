@@ -101,7 +101,7 @@ app.use('/users', usersRouter);
 
 // THIS IS THE SERVER-SIDE REQUEST TO GENERATE THE DYNAMIC KEY 
 // REQUIRED FOR THE MICROFORM TO TOKENIZE
-app.get('/checkout', function (req, res) {
+app.get('/v2/checkout', function (req, res) {
 
     try {
         var apiClient = new cybersourceRestApi.ApiClient();
@@ -138,7 +138,7 @@ app.get('/checkout', function (req, res) {
 
 });
 
-app.post('/token', function (req, res) {
+app.post('/v2/token', function (req, res) {
 
     try {
 
@@ -157,7 +157,7 @@ app.post('/token', function (req, res) {
 
 let reference_id = null;
 
-app.post('/payer-auth-setup', function (req, res) {
+app.post('/v2/payer-auth-setup', function (req, res) {
     console.log("payer-auth-setup req body ------", req.body)
     var token = req.body.token//JSON.parse(req.body.token);
     console.log('Token for payment is: ' + token);
@@ -207,7 +207,7 @@ app.post('/payer-auth-setup', function (req, res) {
     }
 })
 
-app.post('/check-enrollment', function (req, res) {
+app.post('/v2/check-enrollment', function (req, res) {
     try {
         console.log("check-enrollment req body ----", req.body);
         var requestObj = new cybersourceRestApi.CheckPayerAuthEnrollmentRequest();
@@ -280,7 +280,7 @@ app.post('/check-enrollment', function (req, res) {
     }
 })
 
-app.post('/authentication_validation2', async function (req, res) {
+app.post('/v2/authentication_validation2', async function (req, res) {
     console.log("authentication_validation req body ----", req.body);
     try {
         var requestObj = new cybersourceRestApi.ValidateRequest();
@@ -330,7 +330,7 @@ app.post('/authentication_validation2', async function (req, res) {
     }
 })
 
-app.post('/check-enrollment2', async function (req, res) {
+app.post('/v2/check-enrollment2', async function (req, res) {
     try {
         var requestObj = new cybersourceRestApi.CheckPayerAuthEnrollmentRequest();
 
@@ -401,7 +401,7 @@ app.post('/check-enrollment2', async function (req, res) {
         console.log('\nException on calling the API : ' + error);
     }
 })
-app.post('/authentication_validation3', async function (req, res) {
+app.post('/v2/authentication_validation3', async function (req, res) {
     try {
         var requestObj = new cybersourceRestApi.CreatePaymentRequest();
 
@@ -484,7 +484,7 @@ app.post('/authentication_validation3', async function (req, res) {
         console.log('\nException on calling the API : ' + error);
     }
 })
-app.post('/authentication_validation', async function (req, res) {
+app.post('/v2/authentication_validation', async function (req, res) {
     try {
         const requestObj = new cybersourceRestApi.CreatePaymentRequest();
 
@@ -551,7 +551,7 @@ app.post('/authentication_validation', async function (req, res) {
     }
 })
 
-app.post('/create_tms_token', function (req, res) {
+app.post('/v2/create_tms_token', function (req, res) {
     console.log("in create tms token ------", req.body);
     var token = req.body.flexresponse
     try {
