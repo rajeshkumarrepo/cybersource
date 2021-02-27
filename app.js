@@ -109,7 +109,7 @@ app.get('/v2/checkout', function (req, res) {
 
         requestObj.encryptionType = 'RsaOaep256';
         // requestObj.targetOrigin = 'http://localhost';
-        requestObj.targetOrigin = (req.headers.referer).replace(/\/$/, "")
+        requestObj.targetOrigin = "https://shop-dev4.eargo.com"
         var format = "JWT";
 
         var instance = new cybersourceRestApi.KeyGenerationApi(configObj, apiClient);
@@ -196,7 +196,7 @@ app.post('/v2/payer-auth-setup', function (req, res) {
                         accesstoken: data.consumerAuthenticationInformation.accessToken,
                         token,
                         reference_id: data.consumerAuthenticationInformation.referenceId,
-                        return_url: "http://localhost:3000/authentication_validation"
+                        return_url: "https://shop-dev4.eargo.com/v2/authentication_validation"
                     }
                 });
             }
